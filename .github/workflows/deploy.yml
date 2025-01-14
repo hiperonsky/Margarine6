@@ -20,6 +20,9 @@ jobs:
           # Создаем папку .ssh
           mkdir -p ~/.ssh
           
+          # Удаляем старый файл known_hosts (если существует)
+          rm -f ~/.ssh/known_hosts
+
           # Добавляем приватный ключ
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
