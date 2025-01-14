@@ -20,4 +20,4 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
+          ssh -v root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
