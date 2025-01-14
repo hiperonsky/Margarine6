@@ -42,5 +42,5 @@ jobs:
           git pull origin main
           ssh -i ~/.ssh/id_ed25519_deploy root@2.59.183.62 "
             set -e
-            cd /root/Margarine6_bot && git pull origin main && ./deploy.sh
+            cd /root/Margarine6_bot && git pull origin main
           "
