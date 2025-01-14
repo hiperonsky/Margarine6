@@ -3,7 +3,7 @@ name: Deploy
 on:
   push:
     branches:
-      - main  # Запускать workflow при push в ветку main
+      - main
 
 jobs:
   deploy:
@@ -12,13 +12,17 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Deploy application
+      - name: Set up SSH key
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no -T git@github.com
-          ssh -o StrictHostKeyChecking=no root@2.59.183.62 "cd /root/Margarine6_bot && git remote set-url origin git@github.com:hiperonsky/Margarine6.git && git pull origin main && ./deploy.sh"
+          # Убедитесь, что используете SSH URL репозитория
+          git remote set-url origin git@github.com:hiperonsky/Margarine6.git
+          git pull origin main
+          ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
