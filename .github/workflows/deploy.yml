@@ -19,7 +19,7 @@ jobs:
         run: |
           # Создаем папку .ssh
           mkdir -p ~/.ssh
-          
+
           # Удаляем старый файл known_hosts (если существует)
           rm -f ~/.ssh/known_hosts
 
@@ -27,11 +27,13 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
-          # Добавляем GitHub в known_hosts
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
+          # Добавляем GitHub в known_hosts с подробным выводом ошибок
+          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
           # Проверяем содержимое файла known_hosts
           cat ~/.ssh/known_hosts
+
+          # Убедимся, что ключи добавлены корректно
+          ssh -T git@github.com
 
           # Переход к репозиторию и pull
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
