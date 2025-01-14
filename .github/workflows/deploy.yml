@@ -21,10 +21,12 @@ jobs:
           echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan github.com >> ~/.ssh/known_hosts
+          ssh-keyscan 2.59.183.62 >> ~/.ssh/known_hosts
 
       # Пуллим изменения и деплоим на сервер
       - name: Deploy to server
         run: |
+          export GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
           git pull origin main
           ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
