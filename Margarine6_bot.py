@@ -50,67 +50,6 @@ def is_subscribed(user_id):
         print(f"Ошибка при проверке подписки: {e}")
         return False
 
-def split_video(video_path):
-    """
-    Разделяет видео на части по 20 минут и возвращает список сегментов.
-    """
-    try:
-        sanitized_video_path = sanitize_filepath(video_path)  # Очищаем путь
-        file_size = os.path.getsize(sanitized_video_path) / (1024 * 1024)  # Размер в мегабайтах
-
-        part_num = 1
-        output_files = []
-        segment_duration = 1200  # 20 минут в секундах
-
-        # Получаем длительность видео с помощью ffprobe
-        result = subprocess.run(
-            ["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "default=noprint_wrappers=1:nokey=1", sanitized_video_path],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-        )
-        total_duration_str = result.stdout.strip()  # Убираем символы новой строки
-        total_duration = float(total_duration_str)  # Конвертируем в число (в секундах)
-
-        # Если видео слишком короткое, просто вернем его без разделения
-        if total_duration <= segment_duration:
-            output_files = [sanitized_video_path]
-            return output_files, total_duration
-        
-        # Выполняем команду для разделения на 20 минутные части
-        split_command = [
-            "ffmpeg", "-i", sanitized_video_path,
-            "-c", "copy",  # Копируем без перекодирования
-            "-map", "0",   # Сохраняем все потоки (видео, аудио)
-            "-f", "segment",  # Формат сегментации
-            "-segment_time", str(segment_duration),  # Время сегментации: 1200 секунд = 20 минут
-            "-reset_timestamps", "1",  # Сбрасываем метки времени в каждом сегменте
-            f"{sanitized_video_path}_part%03d.mp4"  # Формат имени частей
-        ]
-        
-        print(f"Сегментация: {' '.join(split_command)}")
-        subprocess.run(split_command, check=True)
-        print("Сегментация завершена. Проверяем созданные сегменты...")
-        
-        # Собираем пути к частям
-        part_num = 1
-        while True:
-            part_file = f"{sanitized_video_path}_part{part_num:03d}.mp4"
-            if os.path.exists(part_file):
-                output_files.append(part_file)
-                part_num += 1
-            else:
-                break
-        
-        if not output_files:
-            print("Не удалось найти сегменты. Убедитесь, что команда ffmpeg выполняется корректно.")
-            raise FileNotFoundError("Не удалось найти сегменты видео.")
-
-        return output_files, total_duration
-        
-    except Exception as e:
-        raise RuntimeError(f"Ошибка при разделении видео: {e}")
-
-
-
 def process_video(video_path):
     try:
         video_path = sanitize_filepath(video_path)  # Убедимся, что путь безопасен
@@ -147,66 +86,18 @@ def process_video(video_path):
         else:
             print(f"Оригинальное видео {video_path} не найдено для удаления.")
 
-
         return fixed_video_path, width, height
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Ошибка при обработке видео через FFmpeg: {e}")
 
-def download_with_proxy(url):
-    ydl_opts_with_proxy = {
-        'format': 'bestvideo[height<=480][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=480][vcodec^=avc1]',
-        'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
-        'merge_output_format': 'mp4',
-        'socket_timeout': 30,
-        'geo_bypass': True,
-        'cookies': '/root/Margarine6_bot/cookies.txt',
-        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
-    }
-
-    with YoutubeDL(ydl_opts_with_proxy) as ydl:
-        info = ydl.extract_info(url, download=True)
-        sanitized_path = sanitize_filepath(ydl.prepare_filename(info))
-        return sanitized_path
-
-# Определяем ydl_opts
-ydl_opts = {
-    'format': 'bestvideo[height<=480][vcodec^=avc1]+bestaudio[acodec^=mp4a]/best[height<=480][vcodec^=avc1]',
-    'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s',
-    'merge_output_format': 'mp4',
-    'socket_timeout': 30,
-    'geo_bypass': True,
-}
-
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     notify_admin(message.from_user.id, message.from_user.username, message.text)
-    
-    # Приветственное сообщение
-    bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя")
-    
-    # Отправка видеоинструкции
-    try:
-        with open("margarine_intro.mp4", "rb") as video:
-            bot.send_video(
-                message.chat.id,
-                video,
-                caption="Посмотрите видеоинструкцию, чтобы узнать, как пользоваться ботом."
-            )
-    except Exception as e:
-        bot.send_message(
-            ADMIN_ID,
-            f"⚠️ Ошибка при отправке видеоинструкции:\n\n"
-            f"Пользователь: @{message.from_user.username} (ID: {message.from_user.id})\n"
-            f"Ошибка: {e}"
-        )
+    bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя.")
 
 @bot.message_handler(commands=['show_downloads'])
 def show_downloads(message):
-    """
-    Показывает список файлов в папке для скачивания.
-    Только для администратора.
-    """
     if message.from_user.id == ADMIN_ID:
         try:
             files = os.listdir(DOWNLOAD_DIR)
@@ -222,28 +113,8 @@ def show_downloads(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
-@bot.message_handler(commands=['clean_downloads'])
-def clean_downloads(message):
-    """
-    Очищает содержимое папки для скачивания.
-    Только для администратора.
-    """
-    if message.from_user.id == ADMIN_ID:
-        try:
-            # Очищаем все файлы в папке downloads
-            for filename in os.listdir(DOWNLOAD_DIR):
-                file_path = os.path.join(DOWNLOAD_DIR, filename)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-            bot.send_message(message.chat.id, "Папка downloads очищена.")
-        except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка при очистке папки: {e}")
-    else:
-        bot.reply_to(message, "Эта команда доступна только администратору.")
-
 @bot.message_handler(content_types=['text'])
 def download_video(message):
-    # Проверяем подписку
     if not is_subscribed(message.from_user.id):
         bot.reply_to(
             message,
@@ -258,89 +129,15 @@ def download_video(message):
     bot.reply_to(message, "Начинаю загрузку видео...")
 
     try:
-        with YoutubeDL(ydl_opts) as ydl:
-            # Предварительное извлечение информации о видео
-            info = ydl.extract_info(url, download=False)
-
-            # Очистка названия видео
-            clean_title = sanitize_filename(info['title'])
-
-            # Формирование пути для сохранения файла
-            file_path = os.path.join(DOWNLOAD_DIR, f"{clean_title}.mp4")
-
-            # Удаляем файл, если он уже существует
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-            # Скачиваем видео
+        with YoutubeDL({'format': 'best', 'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
             info = ydl.extract_info(url, download=True)
             video_path = sanitize_filepath(ydl.prepare_filename(info))
-
-            # Обрабатываем видео
             fixed_video_path, width, height = process_video(video_path)
 
-            # Проверяем размер видео и при необходимости разделяем
-            file_size = os.path.getsize(fixed_video_path) / (1024 * 1024)  # Размер в мегабайтах
-            print(f"Начинаем проверку видео: {fixed_video_path}, размер: {file_size:.2f} МБ")
-            if file_size > 49:
-                bot.reply_to(message, "О-оу, видео великовато, придётся его попилить на части. Попробую...")
-                # Разделяем видео, если его размер больше 49 МБ
-                video_parts, total_duration = split_video(fixed_video_path)
-                print(f"Сегменты готовы: {video_parts}. Общее количество частей: {len(video_parts)}")
-            else:
-                video_parts = [fixed_video_path]  # Если видео меньше 49 МБ, не разделяем
-                total_duration = 0
-
-        # Отправляем каждую часть видео с информацией о времени, если видео разделяется
-        for idx, part in enumerate(video_parts, start=1):
-            if not os.path.exists(part):
-                print(f"Сегмент не найден: {part}. Пропускаем.")
-                continue  # Пропускаем отправку недоступного файла
-
-            if total_duration > 0:
-                start_time = (idx - 1) * 20  # Начало отрезка (в минутах)
-                end_time = min(idx * 20, total_duration // 60)  # Конец отрезка
-                caption = f"Часть {idx}: с {start_time} до {end_time} минут"
-            else:
-                caption = None  # Если видео не разделяется, не добавляем подписей
-
-            with open(part, 'rb') as video_file:
-                bot.send_video(
-                    message.chat.id,
-                    video_file,
-                    width=width,
-                    height=height,
-                    caption=caption
-                )
-
-            # Уведомление администратору о размере отправленного видео
-            file_size = os.path.getsize(part) / (1024 * 1024)  # Размер в мегабайтах
-            bot.send_message(
-                ADMIN_ID,
-                f"Видео отправлено пользователю @{message.from_user.username} (ID: {message.from_user.id}).\n"
-                f"Размер видео: {file_size:.2f} МБ"
-            )
-
-            # Удаляем временный файл
-            os.remove(part)
-
+            with open(fixed_video_path, 'rb') as video_file:
+                bot.send_video(message.chat.id, video_file, width=width, height=height)
     except Exception as e:
-        # Лог ошибки для администратора
-        error_log = (
-            f"⚠️ Ошибка при скачивании видео:\n\n"
-            f"Пользователь: @{message.from_user.username} (ID: {message.from_user.id})\n"
-            f"Ссылка на видео: {url}\n"
-            f"Ошибка: {e}"
-        )
-        bot.send_message(ADMIN_ID, error_log)
+        bot.send_message(ADMIN_ID, f"Ошибка при загрузке: {e}")
+        bot.reply_to(message, "Произошла ошибка при загрузке видео.")
 
-        # Уведомление пользователя об ошибке
-        bot.reply_to(
-            message,
-            "К сожалению при скачивании этого видео произошла ошибка. "
-            "Я отправлю отчёт об этом администратору бота."
-        )
-
-
-# Запуск бота
 bot.polling()
