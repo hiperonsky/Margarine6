@@ -27,14 +27,14 @@ jobs:
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
 
-          # Добавляем GitHub в known_hosts с подробным выводом ошибок
+          # Добавляем GitHub в known_hosts
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-          # Проверяем содержимое файла known_hosts
-          cat ~/.ssh/known_hosts
 
-          # Убедимся, что ключи добавлены корректно
-          ssh -T git@github.com
+          # Проверяем подключение к GitHub
+          ssh -T git@github.com || true  # Игнорируем ненулевой код завершения
 
+      - name: Pull latest changes and deploy
+        run: |
           # Переход к репозиторию и pull
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
           git pull origin main
