@@ -39,5 +39,5 @@ jobs:
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
           git pull origin main
 
-          # Перезапуск бота
+          # Выполнение deploy.sh через SSH
           ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
