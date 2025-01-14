@@ -113,6 +113,25 @@ def show_downloads(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
+@bot.message_handler(commands=['clean_downloads'])
+def clean_downloads(message):
+    """
+    Очищает содержимое папки для скачивания.
+    Только для администратора.
+    """
+    if message.from_user.id == ADMIN_ID:
+        try:
+            # Очищаем все файлы в папке downloads
+            for filename in os.listdir(DOWNLOAD_DIR):
+                file_path = os.path.join(DOWNLOAD_DIR, filename)
+                if os.path.isfile(file_path):
+                    os.remove(file_path)
+            bot.send_message(message.chat.id, "Папка downloads очищена.")
+        except Exception as e:
+            bot.send_message(message.chat.id, f"Ошибка при очистке папки: {e}")
+    else:
+        bot.reply_to(message, "Эта команда доступна только администратору.")
+
 @bot.message_handler(content_types=['text'])
 def download_video(message):
     if not is_subscribed(message.from_user.id):
