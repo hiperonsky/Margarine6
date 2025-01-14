@@ -10,18 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # Проверяем исходный код
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy to server
-        env:
-          SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
+      # Настраиваем SSH
+      - name: Set up SSH
         run: |
-          # Устанавливаем URL для доступа к репозиторию через SSH
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      # Пуллим изменения и деплоим на сервер
+      - name: Deploy to server
+        run: |
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
-          
-          # Пуллим последние изменения
           git pull origin main
-          
-          # Подключаемся к серверу и выполняем команды деплоя
           ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
