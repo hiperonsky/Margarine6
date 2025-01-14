@@ -30,8 +30,8 @@ jobs:
           # Добавляем GitHub в known_hosts
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
 
-          # Проверяем подключение к GitHub
-          ssh -T git@github.com || true  # Игнорируем ненулевой код завершения
+          # Добавляем сервер (2.59.183.62) в known_hosts
+          ssh-keyscan -H 2.59.183.62 >> ~/.ssh/known_hosts
 
       - name: Pull latest changes and deploy
         run: |
