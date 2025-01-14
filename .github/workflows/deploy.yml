@@ -20,4 +20,4 @@ jobs:
           mkdir -p ~/.ssh
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh -o StrictHostKeyChecking=no root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
+          ssh -o StrictHostKeyChecking=no root@2.59.183.62 "cd /root/Margarine6_bot && git remote set-url origin git@github.com:username/Margarine6.git && git pull origin main && ./deploy.sh"
