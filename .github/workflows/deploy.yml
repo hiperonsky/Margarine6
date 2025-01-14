@@ -26,7 +26,8 @@ jobs:
       # 3. Тестирование подключения к GitHub
       - name: Test SSH Connection to GitHub
         run: |
-          ssh -i ~/.ssh/id_ed25519 -T git@github.com
+          export GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
+          git ls-remote git@github.com:hiperonsky/Margarine6.git
 
       # 4. Тестирование подключения к серверу
       - name: Test SSH Connection to Server
