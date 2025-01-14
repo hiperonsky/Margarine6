@@ -1,0 +1,37 @@
+        # Загрузка видео
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            video_path = ydl.prepare_filename(info)
+            video_path = os.path.splitext(video_path)[0] + ".mp4"
+
+        bot.reply_to(message, "Видео загружено, выполняю перекодировку...")
+
+        # Путь к перекодированному файлу
+        converted_path = os.path.join(CONVERTED_DIR, os.path.basename(video_path))
+
+        # Перекодировка через FFmpeg для совместимости
+        convert_command = (
+            f"ffmpeg -i \"{video_path}\" "
+            f"-vf \"scale=-1:720\" "  # Сохраняем пропорции, меняя только высоту
+            f"-c:v libx264 -preset fast -crf 23 "
+            f"-c:a aac -b:a 128k "
+            f"-movflags +faststart "
+            f"\"{converted_path}\""
+        )
+        os.system(convert_command)
+
+        # Отправка перекодированного видео
+        with open(converted_path, 'rb') as video:
+            bot.send_video(message.chat.id, video)
+
+        # Удаление временных файлов
+        os.remove(video_path)
+        os.remove(converted_path)
+
+        bot.reply_to(message, "Готово! Видео отправлено.")
+
+    except Exception as e:
+        bot.reply_to(message, f"Произошла ошибка: {e}")
+
+# Запуск бота
+bot.polling()
