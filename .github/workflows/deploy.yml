@@ -10,11 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Проверяем исходный код
+      # 1. Проверяем исходный код
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Настраиваем SSH
+      # 2. Настраиваем SSH
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh
@@ -23,10 +23,21 @@ jobs:
           ssh-keyscan github.com >> ~/.ssh/known_hosts
           ssh-keyscan 2.59.183.62 >> ~/.ssh/known_hosts
 
-      # Пуллим изменения и деплоим на сервер
+      # 3. Тестируем подключение к GitHub
+      - name: Test SSH Connection to GitHub
+        run: ssh -i ~/.ssh/id_ed25519 -T git@github.com
+
+      # 4. Тестируем подключение к серверу
+      - name: Test SSH Connection to Server
+        run: ssh -i ~/.ssh/id_ed25519 root@2.59.183.62 "echo 'Connection successful'"
+
+      # 5. Пуллим изменения и деплоим
       - name: Deploy to server
         run: |
           export GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no'
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
           git pull origin main
-          ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
+          ssh -i ~/.ssh/id_ed25519 root@2.59.183.62 "
+            set -e
+            cd /root/Margarine6_bot && git pull origin main && ./deploy.sh
+          "
