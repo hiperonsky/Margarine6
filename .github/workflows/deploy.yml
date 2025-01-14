@@ -13,31 +13,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up SSH key
+      - name: Deploy to server
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
-          # Создаем папку .ssh
-          mkdir -p ~/.ssh
-
-          # Удаляем старый файл known_hosts (если существует)
-          rm -f ~/.ssh/known_hosts
-
-          # Добавляем приватный ключ
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-
-          # Добавляем GitHub в known_hosts
-          ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-
-          # Добавляем сервер (2.59.183.62) в known_hosts
-          ssh-keyscan -H 2.59.183.62 >> ~/.ssh/known_hosts
-
-      - name: Pull latest changes and deploy
-        run: |
-          # Переход к репозиторию и pull
+          # Устанавливаем URL для доступа к репозиторию через SSH
           git remote set-url origin git@github.com:hiperonsky/Margarine6.git
+          
+          # Пуллим последние изменения
           git pull origin main
-
-          # Выполнение deploy.sh через SSH
+          
+          # Подключаемся к серверу и выполняем команды деплоя
           ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
