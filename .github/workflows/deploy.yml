@@ -17,17 +17,21 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_KEY }}
         run: |
+          # Создаем папку .ssh
           mkdir -p ~/.ssh
+          
+          # Добавляем приватный ключ
           echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
 
           # Добавляем GitHub в known_hosts
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
-          # Убедитесь, что используете SSH URL репозитория
-          git remote set-url origin git@github.com:hiperonsky/Margarine6.git
+          # Проверяем содержимое файла known_hosts
+          cat ~/.ssh/known_hosts
 
-          # Пулл из репозитория
+          # Переход к репозиторию и pull
+          git remote set-url origin git@github.com:hiperonsky/Margarine6.git
           git pull origin main
 
           # Перезапуск бота
