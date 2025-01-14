@@ -24,20 +24,13 @@ jobs:
           rm -f ~/.ssh/known_hosts
 
           # Добавляем приватный ключ
-          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-          # Добавляем GitHub в known_hosts с подробным выводом ошибок
+          # Добавляем GitHub в known_hosts
           ssh-keyscan -H github.com >> ~/.ssh/known_hosts
-          # Проверяем содержимое файла known_hosts
-          cat ~/.ssh/known_hosts
 
-          # Убедимся, что ключи добавлены корректно
-          ssh -T git@github.com
-
-          # Переход к репозиторию и pull
-          git remote set-url origin git@github.com:hiperonsky/Margarine6.git
-          git pull origin main
-
-          # Выполнение deploy.sh через SSH
+      - name: Deploy to server
+        run: |
+          # Подключаемся к серверу и выполняем команды деплоя
           ssh root@2.59.183.62 "cd /root/Margarine6_bot && git pull origin main && ./deploy.sh"
