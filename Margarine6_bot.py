@@ -4,18 +4,20 @@ from yt_dlp import YoutubeDL
 import subprocess
 import re
 import config  # Импортируем модуль с константами
-import downloads_manager # модуль с функциями для папки downloads
+import downloads_manager  # модуль с функциями для папки downloads
 
 bot = telebot.TeleBot(config.API_TOKEN)
 
 if not os.path.exists(config.DOWNLOAD_DIR):
     os.makedirs(config.DOWNLOAD_DIR)
 
+
 def sanitize_filename(filename):
     """
     Удаляет из имени файла символы, которые могут вызывать конфликты.
     """
     return re.sub(r'[:"*?<>|/\\]', '', filename).strip()
+
 
 def sanitize_filepath(filepath):
     """
@@ -25,7 +27,9 @@ def sanitize_filepath(filepath):
     sanitized_filename = sanitize_filename(filename)
     return os.path.join(directory, sanitized_filename)
 
+
 def notify_admin(user_id, username, message_text):
+
     bot.send_message(
         config.ADMIN_ID,
         f"🔔 Новый пользователь:\n"
@@ -33,6 +37,7 @@ def notify_admin(user_id, username, message_text):
         f"Имя: {username}\n"
         f"Сообщение: {message_text}"
     )
+
 
 def is_subscribed(user_id):
     """
@@ -44,6 +49,7 @@ def is_subscribed(user_id):
     except Exception as e:
         print(f"Ошибка при проверке подписки: {e}")
         return False
+
 
 def process_video(video_path):
     try:
@@ -86,13 +92,14 @@ def process_video(video_path):
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Ошибка при обработке видео через FFmpeg: {e}")
 
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     notify_admin(message.from_user.id, message.from_user.username, message.text)
-    
+
     # Приветственное сообщение
     bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя")
-    
+
     # Отправка видеоинструкции
     try:
         with open("margarine_intro.mp4", "rb") as video:
@@ -108,6 +115,7 @@ def send_welcome(message):
             f"Пользователь: @{message.from_user.username} (ID: {message.from_user.id})\n"
             f"Ошибка: {e}"
         )
+
 
 @bot.message_handler(commands=['show_downloads'])
 def show_downloads(message):
@@ -126,6 +134,7 @@ def show_downloads(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
+
 @bot.message_handler(commands=['clean_downloads'])
 def clean_downloads(message):
     if message.from_user.id == config.ADMIN_ID:
@@ -136,6 +145,7 @@ def clean_downloads(message):
             bot.send_message(message.chat.id, f"Ошибка при очистке папки: {e}")
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
+
 
 def download_video_file(url):
     try:
@@ -198,7 +208,7 @@ def handle_download_request(message):
     try:
         # Скачивание видео
         video_path, width, height = download_video_file(url)
-        
+
         # Отправка видео
         send_video_to_user(
             bot, message.chat.id, message.from_user.id, message.from_user.username, url, video_path, width, height
