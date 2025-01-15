@@ -73,7 +73,11 @@ def process_video(video_path):
         ffmpeg_command = [
             "ffmpeg", "-i", fixed_video_path
         ]
-        result = subprocess.run(ffmpeg_command, stderr=subprocess.PIPE, text=True)
+        result = subprocess.run(
+            ffmpeg_command,
+            stderr=subprocess.PIPE,
+            text=True
+        )
         ffmpeg_output = result.stderr
 
         # Используем регулярное выражение для извлечения ширины и высоты видео
@@ -219,7 +223,8 @@ def handle_download_request(message):
     if not is_subscribed(message.from_user.id):
         bot.reply_to(
             message,
-            "Бот бесплатный, но работает только для подписчиков моего телеграм канала: "
+            "Бот бесплатный, но работает только для подписчиков "
+            "моего телеграм канала: "
             "[Передатчик Вована](https://t.me/+AM5qac1gwTUwMGNi)",
             parse_mode='Markdown'
         )
