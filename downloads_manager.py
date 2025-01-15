@@ -1,5 +1,6 @@
 import os
 
+
 def list_downloads(download_dir):
     """
     Возвращает список файлов в указанной папке.
@@ -9,6 +10,7 @@ def list_downloads(download_dir):
         return files
     except Exception as e:
         raise RuntimeError(f"Ошибка при получении содержимого папки: {e}")
+
 
 def clean_downloads(download_dir):
     """
