@@ -175,6 +175,14 @@ def download_video(message):
                 f"Имя файла: {os.path.basename(fixed_video_path)}\n"
                 f"Размер файла: {file_size_mb:.2f} MB"
             )
+
+            # Удаление видео после отправки
+            if os.path.exists(fixed_video_path):
+                os.remove(fixed_video_path)
+                print(f"Видео {fixed_video_path} удалено.")
+            else:
+                print(f"Видео {fixed_video_path} не найдено для удаления.")
+
     except Exception as e:
         bot.send_message(config.ADMIN_ID, f"Ошибка при загрузке: {e}")
         bot.reply_to(message, "Произошла ошибка при загрузке видео.")
