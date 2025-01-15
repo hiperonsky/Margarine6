@@ -110,7 +110,10 @@ def send_welcome(message):
             bot.send_video(
                 message.chat.id,
                 video,
-                caption="Посмотрите видеоинструкцию, чтобы узнать, как пользоваться ботом."
+                caption=(
+                    "Посмотрите видеоинструкцию, чтобы узнать, "
+                    "как пользоваться ботом."
+                )
             )
     except Exception as e:
         bot.send_message(
@@ -134,7 +137,10 @@ def show_downloads(message):
             else:
                 bot.send_message(message.chat.id, "Папка downloads пуста.")
         except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка при получении содержимого папки: {e}")
+            bot.send_message(
+                message.chat.id,
+                f"Ошибка при получении содержимого папки: {e}"
+            )
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
