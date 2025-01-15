@@ -5,10 +5,10 @@ import subprocess
 import re
 import config  # Импортируем модуль с константами
 
-bot = telebot.TeleBot(API_TOKEN)
+bot = telebot.TeleBot(config.API_TOKEN)
 
-if not os.path.exists(DOWNLOAD_DIR):
-    os.makedirs(DOWNLOAD_DIR)
+if not os.path.exists(config.DOWNLOAD_DIR):
+    os.makedirs(config.DOWNLOAD_DIR)
 
 def sanitize_filename(filename):
     """
@@ -26,7 +26,7 @@ def sanitize_filepath(filepath):
 
 def notify_admin(user_id, username, message_text):
     bot.send_message(
-        ADMIN_ID,
+        config.ADMIN_ID,
         f"🔔 Новый пользователь:\n"
         f"ID: {user_id}\n"
         f"Имя: {username}\n"
@@ -38,7 +38,7 @@ def is_subscribed(user_id):
     Проверяет, подписан ли пользователь на канал.
     """
     try:
-        chat_member = bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        chat_member = bot.get_chat_member(config.CHANNEL_USERNAME, user_id)
         return chat_member.status in ['member', 'administrator', 'creator']
     except Exception as e:
         print(f"Ошибка при проверке подписки: {e}")
@@ -92,9 +92,9 @@ def send_welcome(message):
 
 @bot.message_handler(commands=['show_downloads'])
 def show_downloads(message):
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id == config.ADMIN_ID:
         try:
-            files = os.listdir(DOWNLOAD_DIR)
+            files = os.listdir(config.DOWNLOAD_DIR)
             if files:
                 bot.send_message(
                     message.chat.id,
@@ -113,11 +113,11 @@ def clean_downloads(message):
     Очищает содержимое папки для скачивания.
     Только для администратора.
     """
-    if message.from_user.id == ADMIN_ID:
+    if message.from_user.id == config.ADMIN_ID:
         try:
             # Очищаем все файлы в папке downloads
-            for filename in os.listdir(DOWNLOAD_DIR):
-                file_path = os.path.join(DOWNLOAD_DIR, filename)
+            for filename in os.listdir(config.DOWNLOAD_DIR):
+                file_path = os.path.join(config.DOWNLOAD_DIR, filename)
                 if os.path.isfile(file_path):
                     os.remove(file_path)
             bot.send_message(message.chat.id, "Папка downloads очищена.")
@@ -142,7 +142,7 @@ def download_video(message):
     bot.reply_to(message, "Начинаю загрузку видео...")
 
     try:
-        with YoutubeDL({'format': 'best', 'outtmpl': f'{DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
+        with YoutubeDL({'format': 'best', 'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
             info = ydl.extract_info(url, download=True)
             video_path = sanitize_filepath(ydl.prepare_filename(info))
             fixed_video_path, width, height = process_video(video_path)
@@ -150,7 +150,7 @@ def download_video(message):
             with open(fixed_video_path, 'rb') as video_file:
                 bot.send_video(message.chat.id, video_file, width=width, height=height)
     except Exception as e:
-        bot.send_message(ADMIN_ID, f"Ошибка при загрузке: {e}")
+        bot.send_message(config.ADMIN_ID, f"Ошибка при загрузке: {e}")
         bot.reply_to(message, "Произошла ошибка при загрузке видео.")
 
 bot.polling()
