@@ -137,8 +137,51 @@ def clean_downloads(message):
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
+def download_video_file(url):
+    try:
+        with YoutubeDL({'format': 'best', 'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
+            info = ydl.extract_info(url, download=True)
+            video_path = sanitize_filepath(ydl.prepare_filename(info))
+            fixed_video_path, width, height = process_video(video_path)
+            return fixed_video_path, width, height
+    except Exception as e:
+        raise RuntimeError(f"Ошибка при скачивании видео: {e}")
+
+
+def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, height):
+    try:
+        # Получение размера файла
+        file_size = os.path.getsize(video_path)
+        file_size_mb = file_size / (1024 * 1024)
+
+        with open(video_path, 'rb') as video_file:
+            bot.send_video(chat_id, video_file, width=width, height=height)
+
+        # Уведомление администратора о завершении
+        bot.send_message(
+            config.ADMIN_ID,
+            f"✅ Видео успешно скачано и отправлено пользователю:\n"
+            f"ID: {user_id}\n"
+            f"Имя: @{username}\n"
+            f"Ссылка: {url}\n"
+            f"Имя файла: {os.path.basename(video_path)}\n"
+            f"Размер файла: {file_size_mb:.2f} MB"
+        )
+    except Exception as e:
+        bot.send_message(config.ADMIN_ID, f"Ошибка при отправке видео: {e}")
+        raise
+
+    finally:
+        # Удаление видео после отправки
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            print(f"Видео {video_path} удалено.")
+        else:
+            print(f"Видео {video_path} не найдено для удаления.")
+
+
 @bot.message_handler(content_types=['text'])
-def download_video(message):
+def handle_download_request(message):
     if not is_subscribed(message.from_user.id):
         bot.reply_to(
             message,
@@ -153,39 +196,16 @@ def download_video(message):
     bot.reply_to(message, "Начинаю загрузку видео...")
 
     try:
-        with YoutubeDL({'format': 'best', 'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
-            info = ydl.extract_info(url, download=True)
-            video_path = sanitize_filepath(ydl.prepare_filename(info))
-            fixed_video_path, width, height = process_video(video_path)
-            
-            # Получение размера файла
-            file_size = os.path.getsize(fixed_video_path)  # Размер в байтах
-            file_size_mb = file_size / (1024 * 1024)  # Перевод в мегабайты
+        # Скачивание видео
+        video_path, width, height = download_video_file(url)
+        
+        # Отправка видео
+        send_video_to_user(
+            bot, message.chat.id, message.from_user.id, message.from_user.username, url, video_path, width, height
+        )
 
-            with open(fixed_video_path, 'rb') as video_file:
-                bot.send_video(message.chat.id, video_file, width=width, height=height)
-
-            # Уведомление администратора о завершении
-            bot.send_message(
-                config.ADMIN_ID,
-                f"✅ Видео успешно скачано и отправлено пользователю:\n"
-                f"ID: {message.from_user.id}\n"
-                f"Имя: @{message.from_user.username}\n"
-                f"Ссылка: {url}\n"
-                f"Имя файла: {os.path.basename(fixed_video_path)}\n"
-                f"Размер файла: {file_size_mb:.2f} MB"
-            )
-
-            # Удаление видео после отправки
-            if os.path.exists(fixed_video_path):
-                os.remove(fixed_video_path)
-                print(f"Видео {fixed_video_path} удалено.")
-            else:
-                print(f"Видео {fixed_video_path} не найдено для удаления.")
-
-    except Exception as e:
-        bot.send_message(config.ADMIN_ID, f"Ошибка при загрузке: {e}")
-        bot.reply_to(message, "Произошла ошибка при загрузке видео.")
+    except RuntimeError as e:
+        bot.reply_to(message, str(e))
 
 
 bot.polling()
