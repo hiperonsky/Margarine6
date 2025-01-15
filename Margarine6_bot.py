@@ -157,11 +157,27 @@ def download_video(message):
             info = ydl.extract_info(url, download=True)
             video_path = sanitize_filepath(ydl.prepare_filename(info))
             fixed_video_path, width, height = process_video(video_path)
+            
+            # Получение размера файла
+            file_size = os.path.getsize(fixed_video_path)  # Размер в байтах
+            file_size_mb = file_size / (1024 * 1024)  # Перевод в мегабайты
 
             with open(fixed_video_path, 'rb') as video_file:
                 bot.send_video(message.chat.id, video_file, width=width, height=height)
+
+            # Уведомление администратора о завершении
+            bot.send_message(
+                config.ADMIN_ID,
+                f"✅ Видео успешно скачано и отправлено пользователю:\n"
+                f"ID: {message.from_user.id}\n"
+                f"Имя: @{message.from_user.username}\n"
+                f"Ссылка: {url}\n"
+                f"Имя файла: {os.path.basename(fixed_video_path)}\n"
+                f"Размер файла: {file_size_mb:.2f} MB"
+            )
     except Exception as e:
         bot.send_message(config.ADMIN_ID, f"Ошибка при загрузке: {e}")
         bot.reply_to(message, "Произошла ошибка при загрузке видео.")
+
 
 bot.polling()
