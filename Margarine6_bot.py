@@ -53,8 +53,11 @@ def is_subscribed(user_id):
 
 def process_video(video_path):
     try:
-        video_path = sanitize_filepath(video_path)  # Убедимся, что путь безопасен
-        fixed_video_path = sanitize_filepath(os.path.splitext(video_path)[0] + "_fixed.mp4")
+        # Убедимся, что путь безопасен
+        video_path = sanitize_filepath(video_path)
+        fixed_video_path = sanitize_filepath(
+            os.path.splitext(video_path)[0] + "_fixed.mp4"
+        )
 
         # Пересохранение видео с использованием FFmpeg
         # (для исправления метаданных)
