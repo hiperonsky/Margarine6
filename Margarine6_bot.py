@@ -95,7 +95,11 @@ def process_video(video_path):
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
-    notify_admin(message.from_user.id, message.from_user.username, message.text)
+    notify_admin(
+        message.from_user.id,
+        message.from_user.username,
+        message.text
+    )
 
     # Приветственное сообщение
     bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя")
@@ -211,7 +215,14 @@ def handle_download_request(message):
 
         # Отправка видео
         send_video_to_user(
-            bot, message.chat.id, message.from_user.id, message.from_user.username, url, video_path, width, height
+            bot,
+            message.chat.id,
+            message.from_user.id,
+            message.from_user.username,
+            url,
+            video_path,
+            width,
+            height
         )
 
     except RuntimeError as e:
