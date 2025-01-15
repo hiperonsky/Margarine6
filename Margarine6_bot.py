@@ -4,6 +4,7 @@ from yt_dlp import YoutubeDL
 import subprocess
 import re
 import config  # Импортируем модуль с константами
+import downloads_manager # модуль с функциями для папки downloads
 
 bot = telebot.TeleBot(config.API_TOKEN)
 
@@ -112,7 +113,7 @@ def send_welcome(message):
 def show_downloads(message):
     if message.from_user.id == config.ADMIN_ID:
         try:
-            files = os.listdir(config.DOWNLOAD_DIR)
+            files = downloads_manager.list_downloads(config.DOWNLOAD_DIR)
             if files:
                 bot.send_message(
                     message.chat.id,
@@ -127,17 +128,9 @@ def show_downloads(message):
 
 @bot.message_handler(commands=['clean_downloads'])
 def clean_downloads(message):
-    """
-    Очищает содержимое папки для скачивания.
-    Только для администратора.
-    """
     if message.from_user.id == config.ADMIN_ID:
         try:
-            # Очищаем все файлы в папке downloads
-            for filename in os.listdir(config.DOWNLOAD_DIR):
-                file_path = os.path.join(config.DOWNLOAD_DIR, filename)
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
+            downloads_manager.clean_downloads(config.DOWNLOAD_DIR)
             bot.send_message(message.chat.id, "Папка downloads очищена.")
         except Exception as e:
             bot.send_message(message.chat.id, f"Ошибка при очистке папки: {e}")
