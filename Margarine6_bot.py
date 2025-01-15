@@ -88,7 +88,25 @@ def process_video(video_path):
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     notify_admin(message.from_user.id, message.from_user.username, message.text)
-    bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя.")
+    
+    # Приветственное сообщение
+    bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя")
+    
+    # Отправка видеоинструкции
+    try:
+        with open("margarine_intro.mp4", "rb") as video:
+            bot.send_video(
+                message.chat.id,
+                video,
+                caption="Посмотрите видеоинструкцию, чтобы узнать, как пользоваться ботом."
+            )
+    except Exception as e:
+        bot.send_message(
+            config.ADMIN_ID,
+            f"⚠️ Ошибка при отправке видеоинструкции:\n\n"
+            f"Пользователь: @{message.from_user.username} (ID: {message.from_user.id})\n"
+            f"Ошибка: {e}"
+        )
 
 @bot.message_handler(commands=['show_downloads'])
 def show_downloads(message):
