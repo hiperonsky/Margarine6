@@ -3,18 +3,12 @@ import telebot
 from yt_dlp import YoutubeDL
 import subprocess
 import re
-
-API_TOKEN = '7667567049:AAFz2iBVViSl4i-d3gZMALLFvWMDplVw3PI'
-ADMIN_ID = 167815811  # Замените на ваш Telegram ID
+import config  # Импортируем модуль с константами
 
 bot = telebot.TeleBot(API_TOKEN)
 
-DOWNLOAD_DIR = "./downloads"
-
 if not os.path.exists(DOWNLOAD_DIR):
     os.makedirs(DOWNLOAD_DIR)
-
-CHANNEL_USERNAME = "@vovanradio"
 
 def sanitize_filename(filename):
     """
