@@ -56,7 +56,8 @@ def process_video(video_path):
         video_path = sanitize_filepath(video_path)  # Убедимся, что путь безопасен
         fixed_video_path = sanitize_filepath(os.path.splitext(video_path)[0] + "_fixed.mp4")
 
-        # Пересохранение видео с использованием FFmpeg (для исправления метаданных)
+        # Пересохранение видео с использованием FFmpeg
+        # (для исправления метаданных)
         ffmpeg_command = [
             "ffmpeg", "-i", video_path,
             "-movflags", "faststart",  # Исправление метаданных
@@ -102,7 +103,10 @@ def send_welcome(message):
     )
 
     # Приветственное сообщение
-    bot.reply_to(message, "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя")
+    bot.reply_to(
+        message,
+        "Привет! Отправь мне ссылку на видео, и я скачаю его для тебя"
+    )
 
     # Отправка видеоинструкции
     try:
@@ -119,7 +123,8 @@ def send_welcome(message):
         bot.send_message(
             config.ADMIN_ID,
             f"⚠️ Ошибка при отправке видеоинструкции:\n\n"
-            f"Пользователь: @{message.from_user.username} (ID: {message.from_user.id})\n"
+            f"Пользователь: @{message.from_user.username} "
+            f"(ID: {message.from_user.id})\n"
             f"Ошибка: {e}"
         )
 
