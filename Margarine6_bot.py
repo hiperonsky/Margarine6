@@ -159,7 +159,11 @@ def clean_downloads(message):
 
 def download_video_file(url):
     try:
-        with YoutubeDL({'format': 'best', 'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'}) as ydl:
+        ydl_opts = {
+            'format': 'best',
+            'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'
+        }
+        with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             video_path = sanitize_filepath(ydl.prepare_filename(info))
             fixed_video_path, width, height = process_video(video_path)
@@ -168,7 +172,9 @@ def download_video_file(url):
         raise RuntimeError(f"Ошибка при скачивании видео: {e}")
 
 
-def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, height):
+def send_video_to_user(
+    bot, chat_id, user_id, username, url, video_path, width, height
+):
     try:
         # Получение размера файла
         file_size = os.path.getsize(video_path)
@@ -211,7 +217,11 @@ def handle_download_request(message):
         )
         return
 
-    notify_admin(message.from_user.id, message.from_user.username, message.text)
+    notify_admin(
+        message.from_user.id,
+        message.from_user.username,
+        message.text
+    )
     url = message.text
     bot.reply_to(message, "Начинаю загрузку видео...")
 
