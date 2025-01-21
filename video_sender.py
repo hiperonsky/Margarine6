@@ -23,7 +23,7 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
             part_filenames = []
 
             # Команда FFmpeg для деления файла
-            output_template = os.path.join(parts_dir, f"{base_filename}_part%03d{ext}")
+            output_template = os.path.join(parts_dir, f"{base_filename}_part%d{ext}")  # %d вместо %03d
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
@@ -32,7 +32,6 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                 "-f", "segment",
                 "-segment_time", "300",  # Делим на части по 5 минут
                 "-reset_timestamps", "1",  # Сбрасываем тайм-коды
-                "-start_number", "1",  # Нумерация начинается с 1
                 output_template
             ]
             subprocess.run(ffmpeg_command, check=True)
@@ -76,7 +75,7 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                     continue  # Пропускаем часть, если она превышает лимит
 
                 with open(part_path, 'rb') as video_file:
-                    bot.send_video(chat_id, video_file)
+                    bot.send_video(chat_id, video_file, width=width, height=height)
 
                 # Удаляем часть после отправки
                 os.remove(part_path)
