@@ -2,7 +2,9 @@ import os
 import subprocess
 
 
-def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, height, admin_id):
+def send_video_to_user(
+    bot, chat_id, user_id, username, url, video_path, width, height, admin_id
+):
     try:
         # Получение размера файла
         file_size = os.path.getsize(video_path)
@@ -23,7 +25,7 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
             part_filenames = []
 
             # Команда FFmpeg для деления файла
-            output_template = os.path.join(parts_dir, f"{base_filename}_part%d{ext}")  # %d вместо %03d
+            output_template = os.path.join(parts_dir, f"{base_filename}_part%d{ext}")
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
