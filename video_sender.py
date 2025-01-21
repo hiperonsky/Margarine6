@@ -30,7 +30,7 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                 "-c", "copy",
                 "-map", "0",
                 "-f", "segment",
-                "-segment_time", "300",  # Делим на части по 5 минут
+                "-segment_time", "600",  # Делим на части по 10 минут
                 "-reset_timestamps", "1",  # Сбрасываем тайм-коды
                 output_template
             ]
