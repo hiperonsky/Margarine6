@@ -8,7 +8,7 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
         file_size = os.path.getsize(video_path)
         file_size_mb = file_size / (1024 * 1024)
 
-        # Проверка размера файла
+        # Если файл больше 50 МБ, разделяем его на части
         if file_size_mb > 50:
             # Уведомление пользователя о делении файла
             bot.send_message(
@@ -22,25 +22,30 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
             base_filename, ext = os.path.splitext(original_filename)
             part_filenames = []
 
-            # FFmpeg команда для деления файла
+            # Команда FFmpeg для деления файла
+            output_template = os.path.join(parts_dir, f"{base_filename}_part%03d{ext}")
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
                 "-c", "copy",
                 "-map", "0",
                 "-f", "segment",
-                "-segment_time", "300",  # Пример: делим на 5-минутные части
-                f"{parts_dir}/{base_filename}_part%03d{ext}"
+                "-segment_time", "300",  # Делим на части по 5 минут
+                output_template
             ]
-
             subprocess.run(ffmpeg_command, check=True)
 
-            # Сбор имен файлов частей
+            # Удаляем оригинальный файл после деления
+            if os.path.exists(video_path):
+                os.remove(video_path)
+                print(f"Исходное видео {video_path} удалено после деления.")
+
+            # Список частей
             for filename in os.listdir(parts_dir):
                 if filename.startswith(base_filename) and filename.endswith(ext):
-                    part_filenames.append(filename)
+                    part_filenames.append(os.path.join(parts_dir, filename))
 
-            # Уведомление администратора о делении файла
+            # Уведомление администратора о делении
             bot.send_message(
                 admin_id,
                 f"⚠️ Видео разделено на части:\n"
@@ -48,21 +53,32 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                 f"Имя: @{username}\n"
                 f"Ссылка: {url}\n"
                 f"Имя исходного файла: {original_filename} ({file_size_mb:.2f} MB)\n"
-                f"Разделенные части:\n" +
+                f"Части:\n" +
                 "\n".join(
                     [
-                        f"{part} ({os.path.getsize(os.path.join(parts_dir, part)) / (1024 * 1024):.2f} MB)"
+                        f"{os.path.basename(part)} ({os.path.getsize(part) / (1024 * 1024):.2f} MB)"
                         for part in part_filenames
                     ]
                 )
             )
 
             # Отправка частей пользователю
-            for part in part_filenames:
-                part_path = os.path.join(parts_dir, part)
+            for part_path in part_filenames:
+                part_size_mb = os.path.getsize(part_path) / (1024 * 1024)
+                if part_size_mb > 50:
+                    bot.send_message(
+                        chat_id,
+                        f"⚠️ Одна из частей ({os.path.basename(part_path)}) превышает 50 МБ. "
+                        f"Я не могу отправить её через Telegram."
+                    )
+                    continue  # Пропускаем часть, если она превышает лимит
+
                 with open(part_path, 'rb') as video_file:
                     bot.send_video(chat_id, video_file)
-                os.remove(part_path)  # Удаляем отправленную часть
+
+                # Удаляем часть после отправки
+                os.remove(part_path)
+                print(f"Часть {part_path} отправлена и удалена.")
             return
 
         # Если файл меньше 50 МБ, отправляем как обычно
