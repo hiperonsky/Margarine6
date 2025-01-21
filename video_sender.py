@@ -31,6 +31,8 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                 "-map", "0",
                 "-f", "segment",
                 "-segment_time", "300",  # Делим на части по 5 минут
+                "-reset_timestamps", "1",  # Сбрасываем тайм-коды
+                "-start_number", "1",  # Нумерация начинается с 1
                 output_template
             ]
             subprocess.run(ffmpeg_command, check=True)
@@ -57,13 +59,13 @@ def send_video_to_user(bot, chat_id, user_id, username, url, video_path, width, 
                 "\n".join(
                     [
                         f"{os.path.basename(part)} ({os.path.getsize(part) / (1024 * 1024):.2f} MB)"
-                        for part in part_filenames
+                        for part in sorted(part_filenames)
                     ]
                 )
             )
 
             # Отправка частей пользователю
-            for part_path in part_filenames:
+            for part_path in sorted(part_filenames):
                 part_size_mb = os.path.getsize(part_path) / (1024 * 1024)
                 if part_size_mb > 50:
                     bot.send_message(
