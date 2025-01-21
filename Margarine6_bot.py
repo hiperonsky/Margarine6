@@ -219,7 +219,8 @@ def handle_download_request(message):
             url,
             video_path,
             width,
-            height
+            height,
+            config.ADMIN_ID  # Передаем ID администратора
         )
 
     except RuntimeError as e:
