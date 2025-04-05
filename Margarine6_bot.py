@@ -174,7 +174,8 @@ def clean_downloads(message):
 def download_video_file(url):
     try:
         ydl_opts = {
-            'format': 'best',
+            'format': 'bv*+ba/best',
+            'merge_output_format': 'mp4',
             'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'
         }
         with YoutubeDL(ydl_opts) as ydl:
