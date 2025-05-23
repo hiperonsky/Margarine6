@@ -3,7 +3,7 @@ import telebot
 from yt_dlp import YoutubeDL
 import subprocess
 import re
-import config  # Импортируем модуль с константами
+import config  # Импортируем модуль с константами, тест
 import downloads_manager  # модуль с функциями для папки downloads
 from video_sender import send_video_to_user
 
