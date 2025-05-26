@@ -171,30 +171,41 @@ def clean_downloads(message):
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
 
+def get_format_str(url):
+    if 'instagram.com' in url:
+        return 'b'
+    else:
+        return '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
+
+def download_with_options(url, use_tor=False):
+    ydl_opts = {
+        'format': get_format_str(url),
+        'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s',
+        'quiet': True,
+        'no_warnings': True,
+    }
+
+    if use_tor:
+        ydl_opts['proxy'] = 'socks5://127.0.0.1:9050'
+
+    with YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        video_path = sanitize_filepath(ydl.prepare_filename(info))
+        return process_video(video_path)
+
 def download_video_file(url):
     try:
-        # Определяем формат в зависимости от платформы
-        if 'instagram.com' in url:
-            format_str = 'b'
+        return download_with_options(url)
+    except DownloadError as e:
+        error_msg = str(e).lower()
+        if 'blocked it in your country' in error_msg or 'unavailable' in error_msg:
+            # Попробовать через Tor
+            try:
+                return download_with_options(url, use_tor=True)
+            except Exception as e2:
+                raise RuntimeError(f"Ошибка даже через Tor: {e2}")
         else:
-            format_str = '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
-
-        ydl_opts = {
-            'format': format_str,
-            'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s',
-            'noplaylist': True,
-            'quiet': True,  # Убирает лишний вывод в консоль
-            'no_warnings': True,
-        }
-
-        with YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            video_path = sanitize_filepath(ydl.prepare_filename(info))
-            fixed_video_path, width, height = process_video(video_path)
-            return fixed_video_path, width, height
-
-    except Exception as e:
-        raise RuntimeError(f"Ошибка при скачивании видео: {e}")
+            raise RuntimeError(f"Ошибка при скачивании видео: {e}")
 
 
 @bot.message_handler(content_types=['text'])
