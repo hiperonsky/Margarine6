@@ -173,15 +173,26 @@ def clean_downloads(message):
 
 def download_video_file(url):
     try:
+        # Определяем формат в зависимости от платформы
+        if 'instagram.com' in url:
+            format_str = 'b'
+        else:
+            format_str = '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
+
         ydl_opts = {
-            'format': '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]',
-            'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s'
+            'format': format_str,
+            'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s',
+            'noplaylist': True,
+            'quiet': True,  # Убирает лишний вывод в консоль
+            'no_warnings': True,
         }
+
         with YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=True)
             video_path = sanitize_filepath(ydl.prepare_filename(info))
             fixed_video_path, width, height = process_video(video_path)
             return fixed_video_path, width, height
+
     except Exception as e:
         raise RuntimeError(f"Ошибка при скачивании видео: {e}")
 
