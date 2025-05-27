@@ -199,22 +199,20 @@ def download_video_file(url):
     try:
         return download_with_options(url)
     except Exception as e:
-        raise RuntimeError(f"Ошибка при скачивании видео: {e}")
-#    except DownloadError as e:
-#        error_msg = str(e).lower()
-#        if any(keyword in error_msg for keyword in [
-#            'blocked it in your country',
-#            'video unavailable',
-#            'sign in to confirm',
-#            'copyright grounds'
-#        ]):
-#            print("Попытка через Tor + cookies из-за ошибки:", error_msg)
-#            try:
-#                return download_with_options(url, use_tor=True)
-#            except Exception as e2:
-#                raise RuntimeError(f"Ошибка даже через Tor: {e2}")
-#        else:
-#            raise RuntimeError(f"Ошибка при скачивании видео: {e}")
+        error_msg = str(e).lower()
+        if any(keyword in error_msg for keyword in [
+            'blocked it in your country',
+            'video unavailable',
+            'sign in to confirm',
+            'copyright grounds'
+        ]):
+            print("Попытка через Tor + cookies из-за ошибки:", error_msg)
+            try:
+                return download_with_options(url, use_tor=True)
+            except Exception as e2:
+                raise RuntimeError(f"Ошибка даже через Tor: {e2}")
+        else:
+            raise RuntimeError(f"Ошибка при скачивании видео: {e}")
 
 
 @bot.message_handler(content_types=['text'])
