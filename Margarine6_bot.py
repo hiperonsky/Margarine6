@@ -6,6 +6,7 @@ import re
 import config  # Импортируем модуль с константами, тест
 import downloads_manager  # модуль с функциями для папки downloads
 from video_sender import send_video_to_user
+from yt_dlp.utils import DownloadError
 
 
 bot = telebot.TeleBot(config.API_TOKEN)
@@ -199,8 +200,13 @@ def download_video_file(url):
         return download_with_options(url)
     except DownloadError as e:
         error_msg = str(e).lower()
-        if 'blocked it in your country' in error_msg or 'unavailable' in error_msg:
-            # Попробовать через Tor
+        if any(keyword in error_msg for keyword in [
+            'blocked it in your country',
+            'video unavailable',
+            'sign in to confirm',
+            'copyright grounds'
+        ]):
+            print("Попытка через Tor + cookies из-за ошибки:", error_msg)
             try:
                 return download_with_options(url, use_tor=True)
             except Exception as e2:
