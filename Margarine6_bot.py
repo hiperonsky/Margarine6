@@ -205,6 +205,7 @@ def download_video_file(url):
             'video unavailable',
             'sign in to confirm',
             'copyright grounds'
+            'confirm you’re not a bot'
         ]):
             print("Попытка через Tor + cookies из-за ошибки:", error_msg)
             try:
