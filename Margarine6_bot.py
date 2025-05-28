@@ -178,6 +178,7 @@ def get_format_str(url):
     else:
         return '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
 
+
 def download_with_options(url, use_tor=False):
     ydl_opts = {
         'format': get_format_str(url),
@@ -194,6 +195,7 @@ def download_with_options(url, use_tor=False):
         info = ydl.extract_info(url, download=True)
         video_path = sanitize_filepath(ydl.prepare_filename(info))
         return process_video(video_path)
+
 
 def download_video_file(url):
     try:
