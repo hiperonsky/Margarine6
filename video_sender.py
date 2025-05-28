@@ -25,7 +25,7 @@ def send_video_to_user(
             part_filenames = []
 
             # Команда FFmpeg для деления файла
-            output_template = os.path.join(parts_dir, f"{base_filename}_part%d{ext}")
+            output_template = os.path.join(parts_dir, f"{base_filename}_part%02d{ext}")
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
