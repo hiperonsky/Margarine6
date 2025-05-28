@@ -43,10 +43,19 @@ def send_video_to_user(
                 os.remove(video_path)
                 print(f"Исходное видео {video_path} удалено после деления.")
 
-            # Список частей
+            # Переименование частей с нумерацией от 01
+            temp_parts = []
             for filename in os.listdir(parts_dir):
-                if filename.startswith(base_filename) and filename.endswith(ext):
-                    part_filenames.append(os.path.join(parts_dir, filename))
+                if filename.startswith(base_filename + "_part") and filename.endswith(ext):
+                    temp_parts.append(filename)
+            temp_parts.sort()
+
+            for idx, old_name in enumerate(temp_parts, start=1):
+                new_name = f"{base_filename}_part{idx:02d}{ext}"
+                old_path = os.path.join(parts_dir, old_name)
+                new_path = os.path.join(parts_dir, new_name)
+                os.rename(old_path, new_path)
+                part_filenames.append(new_path)
 
             # Уведомление администратора о делении
             bot.send_message(
@@ -60,13 +69,13 @@ def send_video_to_user(
                 "\n".join(
                     [
                         f"{os.path.basename(part)} ({os.path.getsize(part) / (1024 * 1024):.2f} MB)"
-                        for part in sorted(part_filenames)
+                        for part in part_filenames
                     ]
                 )
             )
 
             # Отправка частей пользователю
-            for part_path in sorted(part_filenames):
+            for part_path in part_filenames:
                 part_size_mb = os.path.getsize(part_path) / (1024 * 1024)
                 if part_size_mb > 50:
                     bot.send_message(
