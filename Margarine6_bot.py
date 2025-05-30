@@ -112,10 +112,10 @@ def youtube_blocked_test(message):
             download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
             os.makedirs(download_dir, exist_ok=True)
 
-            # Название временного файла
+            # Шаблон для сохранения
             output_template = os.path.join(download_dir, '%(title)s.%(ext)s')
 
-            # yt-dlp команды
+            # yt-dlp команда
             ytdlp_command = [
                 "yt-dlp",
                 "--proxy", "socks5://127.0.0.1:9050",
@@ -125,27 +125,38 @@ def youtube_blocked_test(message):
                 "https://www.youtube.com/watch?v=QnaS8T4MdrI"
             ]
 
-            # Выполнение загрузки
+            # Загрузка видео
             subprocess.run(ytdlp_command, check=True)
 
-            # Поиск загруженного файла
-            downloaded_files = [f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))]
+            # Поиск файла
+            downloaded_files = [
+                f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))
+            ]
             if not downloaded_files:
                 bot.send_message(message.chat.id, "Не удалось найти загруженное видео.")
                 return
 
             video_path = os.path.join(download_dir, downloaded_files[0])
 
-            # Обработка видео через process_video
+            # Обработка видео
             fixed_video_path, width, height = process_video(video_path)
 
-            # Отправка видео
-            with open(fixed_video_path, 'rb') as video_file:
-                bot.send_video(message.chat.id, video_file, supports_streaming=True,
-                               caption=f"Обработанное видео {width}x{height}")
+            # Отправка через send_video_to_user
+            send_video_to_user(
+                bot=bot,
+                chat_id=message.chat.id,
+                user_id=message.from_user.id,
+                username=message.from_user.username,
+                url="https://www.youtube.com/watch?v=QnaS8T4MdrI",
+                video_path=fixed_video_path,
+                width=width,
+                height=height,
+                admin_id=config.ADMIN_ID
+            )
 
-            # Удаление обработанного видео
-            os.remove(fixed_video_path)
+            # Удаление видео
+            if os.path.exists(fixed_video_path):
+                os.remove(fixed_video_path)
 
         except subprocess.CalledProcessError as e:
             bot.send_message(message.chat.id, f"Ошибка при загрузке видео: {e}")
