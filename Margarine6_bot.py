@@ -108,56 +108,49 @@ def process_video(video_path):
 def youtube_blocked_test(message):
     if message.from_user.id == config.ADMIN_ID:
         try:
-            import os
-            import subprocess
-
-            from process_video_module import process_video  # если process_video в отдельном модуле
-
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            download_dir = os.path.join(script_dir, 'downloads')
+            # Папка для загрузки
+            download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
             os.makedirs(download_dir, exist_ok=True)
 
-            url = "https://www.youtube.com/watch?v=QnaS8T4MdrI"
-            cookies_path = os.path.join(script_dir, 'web_auth_storage.txt')
+            # Название временного файла
+            output_template = os.path.join(download_dir, '%(title)s.%(ext)s')
 
-            # Скачиваем видео
-            command = [
+            # yt-dlp команды
+            ytdlp_command = [
                 "yt-dlp",
                 "--proxy", "socks5://127.0.0.1:9050",
-                "--cookies", cookies_path,
+                "--cookies", "web_auth_storage.txt",
                 "-f", "(bv*+ba/b)[height<=720]",
-                "-P", download_dir,
-                url
+                "-o", output_template,
+                "https://www.youtube.com/watch?v=QnaS8T4MdrI"
             ]
-            subprocess.run(command, check=True)
 
-            # Ищем загруженное видео
-            downloaded_files = [f for f in os.listdir(download_dir) if f.lower().endswith(('.mp4', '.webm', '.mkv'))]
+            # Выполнение загрузки
+            subprocess.run(ytdlp_command, check=True)
+
+            # Поиск загруженного файла
+            downloaded_files = [f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))]
             if not downloaded_files:
-                bot.send_message(message.chat.id, "Видео не было скачано.")
+                bot.send_message(message.chat.id, "Не удалось найти загруженное видео.")
                 return
 
             video_path = os.path.join(download_dir, downloaded_files[0])
 
-            # Обрабатываем видео через process_video
-            fixed_path, width, height = process_video(video_path)
+            # Обработка видео через process_video
+            fixed_video_path, width, height = process_video(video_path)
 
-            # Отправляем исправленное видео
-            with open(fixed_path, 'rb') as video_file:
-                bot.send_video(
-                    chat_id=message.chat.id,
-                    video=video_file,
-                    caption=f"✅ Видео обработано\n📐 Размеры: {width}x{height}"
-                )
+            # Отправка видео
+            with open(fixed_video_path, 'rb') as video_file:
+                bot.send_video(message.chat.id, video_file, supports_streaming=True,
+                               caption=f"Обработанное видео {width}x{height}")
 
-            # Удаляем обработанный файл
-            if os.path.exists(fixed_path):
-                os.remove(fixed_path)
+            # Удаление обработанного видео
+            os.remove(fixed_video_path)
 
         except subprocess.CalledProcessError as e:
-            bot.send_message(message.chat.id, f"Ошибка при скачивании или обработке видео: {e}")
+            bot.send_message(message.chat.id, f"Ошибка при загрузке видео: {e}")
         except Exception as e:
-            bot.send_message(message.chat.id, f"Произошла ошибка: {e}")
+            bot.send_message(message.chat.id, f"Ошибка: {e}")
     else:
         bot.reply_to(message, "Эта команда доступна только администратору.")
 
