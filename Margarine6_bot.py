@@ -7,6 +7,7 @@ import config  # Импортируем модуль с константами, 
 import downloads_manager  # модуль с функциями для папки downloads
 from video_sender import send_video_to_user
 from yt_dlp.utils import DownloadError
+import http.cookiejar
 
 
 bot = telebot.TeleBot(config.API_TOKEN)
@@ -189,8 +190,13 @@ def download_with_options(url, use_tor=False):
 
     if use_tor:
         ydl_opts['proxy'] = 'socks5://127.0.0.1:9050'
-        ydl_opts['cookies'] = '/root/Margarine6_bot/web_auth_storage.txt'
-        print("TOR + COOKIES используются:", ydl_opts)
+
+        # Подключаем cookies как cookiejar
+        cj = http.cookiejar.LWPCookieJar()
+        cj.load('/root/Margarine6_bot/web_auth_storage.txt', ignore_discard=True, ignore_expires=True)
+        ydl_opts['cookiefile'] = cj  # или просто 'cookies': cj
+
+    print("TOR + COOKIES используются:", ydl_opts)
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
