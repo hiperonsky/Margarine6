@@ -8,6 +8,12 @@ import downloads_manager  # модуль с функциями для папки
 from video_sender import send_video_to_user
 from yt_dlp.utils import DownloadError
 
+# Проверяем наличие файла cookies
+cookie_path = '/root/Margarine6_bot/web_auth_storage.txt'
+print("Cookies-файл существует:", os.path.exists(cookie_path))
+print("Абсолютный путь:", os.path.abspath(cookie_path))
+
+
 
 bot = telebot.TeleBot(config.API_TOKEN)
 
