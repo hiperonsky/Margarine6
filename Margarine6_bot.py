@@ -189,7 +189,7 @@ def download_with_options(url, use_tor=False):
 
     if use_tor:
         ydl_opts['proxy'] = 'socks5://127.0.0.1:9050'
-        ydl_opts['cookies'] = '/root/Margarine6_bot/cookies.txt'
+        ydl_opts['cookies'] = '/root/Margarine6_bot/web_auth_storage.txt'
 
     with YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
