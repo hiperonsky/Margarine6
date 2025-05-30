@@ -176,7 +176,7 @@ def get_format_str(url):
     if 'instagram.com' in url:
         return 'b'
     elif 'vimeo.com' in url:
-        return 'best'
+        return 'b'
     else:
         return '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
 
