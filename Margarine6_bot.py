@@ -195,6 +195,98 @@ def youtube_blocked_test(message):
         bot.send_message(message.chat.id, f"🚫 Ошибка: {e}")
 
 
+@bot.message_handler(commands=['instagram_test'])
+def instagram_test(message):
+    if message.from_user.id != config.ADMIN_ID:
+        bot.reply_to(message, "Эта команда доступна только администратору.")
+        return
+
+    try:
+        # Подготовка путей и команды
+        download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
+        os.makedirs(download_dir, exist_ok=True)
+        output_template = os.path.join(download_dir, '%(title)s.%(ext)s')
+
+        ytdlp_command = [
+            "yt-dlp",
+            "--proxy", "socks5://127.0.0.1:9050",
+            "--cookies", "web_auth_storage.txt",
+            "-f", "mp4",
+            "-o", output_template,
+            "https://www.instagram.com/reel/DFk0NvTuX4S/?igsh=MWZ1MTFhOWExMGV5bQ=="
+        ]
+
+        # Первичное сообщение
+        status_message = bot.send_message(message.chat.id, "🔄 Загрузка Instagram-видео...")
+
+        # Запуск yt-dlp с выводом прогресса
+        process = subprocess.Popen(
+            ytdlp_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+
+        last_edit_time = 0
+        for line in process.stdout:
+            if not line.strip():
+                continue
+
+            # Отображение прогресса
+            progress_match = re.search(r'(\d{1,3}\.\d+)%', line)
+            if progress_match:
+                percent = float(progress_match.group(1))
+                blocks = int(percent / 10)
+                bar = "▓" * blocks + "░" * (10 - blocks)
+                now = time.time()
+                if now - last_edit_time > 1:
+                    bot.edit_message_text(
+                        f"📥 Прогресс: `{bar} {percent:.1f}%`",
+                        chat_id=message.chat.id,
+                        message_id=status_message.message_id,
+                        parse_mode="Markdown"
+                    )
+                    last_edit_time = now
+
+        process.wait()
+
+        if process.returncode != 0:
+            bot.edit_message_text("❌ Ошибка при загрузке видео.", chat_id=message.chat.id, message_id=status_message.message_id)
+            return
+
+        # Поиск загруженного файла
+        downloaded_files = [f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))]
+        if not downloaded_files:
+            bot.edit_message_text("⚠️ Не удалось найти загруженное видео.", chat_id=message.chat.id, message_id=status_message.message_id)
+            return
+
+        video_path = os.path.join(download_dir, downloaded_files[0])
+
+        # Обработка видео
+        fixed_video_path, width, height = process_video(video_path)
+
+        # Отправка пользователю
+        send_video_to_user(
+            bot=bot,
+            chat_id=message.chat.id,
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            url="https://www.instagram.com/reel/DFk0NvTuX4S/?igsh=MWZ1MTFhOWExMGV5bQ==",
+            video_path=fixed_video_path,
+            width=width,
+            height=height,
+            admin_id=config.ADMIN_ID
+        )
+
+        # Удаление обработанного файла
+        if os.path.exists(fixed_video_path):
+            os.remove(fixed_video_path)
+
+    except Exception as e:
+        bot.send_message(message.chat.id, f"🚫 Ошибка: {e}")
+
+
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     notify_admin(
