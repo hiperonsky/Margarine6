@@ -175,8 +175,11 @@ def clean_downloads(message):
 def get_format_str(url):
     if 'instagram.com' in url:
         return 'b'
+    elif 'vimeo.com' in url:
+        return 'best'
     else:
         return '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
+
 
 
 def download_with_options(url, use_tor=False):
