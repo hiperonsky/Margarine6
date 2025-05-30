@@ -3,6 +3,7 @@ import telebot
 from yt_dlp import YoutubeDL
 import subprocess
 import re
+import time
 import config  # Импортируем модуль с константами, тест
 import downloads_manager  # модуль с функциями для папки downloads
 from video_sender import send_video_to_user
@@ -106,81 +107,92 @@ def process_video(video_path):
 
 @bot.message_handler(commands=['youtube_blocked_test'])
 def youtube_blocked_test(message):
-    if message.from_user.id == config.ADMIN_ID:
-        try:
-            # Папка для загрузки
-            download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
-            os.makedirs(download_dir, exist_ok=True)
-
-            # Шаблон для сохранения
-            output_template = os.path.join(download_dir, '%(title)s.%(ext)s')
-
-            # yt-dlp команда
-            ytdlp_command = [
-                "yt-dlp",
-                "--proxy", "socks5://127.0.0.1:9050",
-                "--cookies", "web_auth_storage.txt",
-                "-f", "(bv*+ba/b)[height<=720]",
-                "-o", output_template,
-                "https://www.youtube.com/watch?v=QnaS8T4MdrI"
-            ]
-
-            # Сообщение пользователю
-            bot.send_message(message.chat.id, "Начинаю загрузку видео через Tor...")
-
-            # Запуск yt-dlp с выводом построчно
-            process = subprocess.Popen(
-                ytdlp_command,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1
-            )
-
-            for line in process.stdout:
-                if line.strip():
-                    bot.send_message(message.chat.id, f"`{line.strip()}`", parse_mode="Markdown")
-
-            process.wait()
-
-            if process.returncode != 0:
-                bot.send_message(message.chat.id, "Загрузка завершилась с ошибкой.")
-                return
-
-            # Поиск загруженного файла
-            downloaded_files = [
-                f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))
-            ]
-            if not downloaded_files:
-                bot.send_message(message.chat.id, "Не удалось найти загруженное видео.")
-                return
-
-            video_path = os.path.join(download_dir, downloaded_files[0])
-
-            # Обработка видео
-            fixed_video_path, width, height = process_video(video_path)
-
-            # Отправка пользователю
-            send_video_to_user(
-                bot=bot,
-                chat_id=message.chat.id,
-                user_id=message.from_user.id,
-                username=message.from_user.username,
-                url="https://www.youtube.com/watch?v=QnaS8T4MdrI",
-                video_path=fixed_video_path,
-                width=width,
-                height=height,
-                admin_id=config.ADMIN_ID
-            )
-
-            # Удаление видео
-            if os.path.exists(fixed_video_path):
-                os.remove(fixed_video_path)
-
-        except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка: {e}")
-    else:
+    if message.from_user.id != config.ADMIN_ID:
         bot.reply_to(message, "Эта команда доступна только администратору.")
+        return
+
+    try:
+        # Подготовка
+        download_dir = os.path.join(os.path.dirname(__file__), 'downloads')
+        os.makedirs(download_dir, exist_ok=True)
+        output_template = os.path.join(download_dir, '%(title)s.%(ext)s')
+
+        ytdlp_command = [
+            "yt-dlp",
+            "--proxy", "socks5://127.0.0.1:9050",
+            "--cookies", "web_auth_storage.txt",
+            "-f", "(bv*+ba/b)[height<=720]",
+            "-o", output_template,
+            "https://www.youtube.com/watch?v=QnaS8T4MdrI"
+        ]
+
+        # Первичное сообщение
+        status_message = bot.send_message(message.chat.id, "🔄 Загрузка видео...")
+
+        # Запуск yt-dlp
+        process = subprocess.Popen(
+            ytdlp_command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1
+        )
+
+        last_edit_time = 0
+        for line in process.stdout:
+            if not line.strip():
+                continue
+
+            # Попытка найти прогресс
+            progress_match = re.search(r'(\d{1,3}\.\d+)%', line)
+            if progress_match:
+                percent = float(progress_match.group(1))
+                blocks = int(percent / 10)
+                bar = "▓" * blocks + "░" * (10 - blocks)
+                now = time.time()
+                if now - last_edit_time > 1:  # не обновлять чаще 1 раза в секунду
+                    bot.edit_message_text(
+                        f"📥 Прогресс: `{bar} {percent:.1f}%`",
+                        chat_id=message.chat.id,
+                        message_id=status_message.message_id,
+                        parse_mode="Markdown"
+                    )
+                    last_edit_time = now
+
+        process.wait()
+
+        if process.returncode != 0:
+            bot.edit_message_text("❌ Загрузка завершилась с ошибкой.", chat_id=message.chat.id, message_id=status_message.message_id)
+            return
+
+        # Поиск и обработка видео
+        downloaded_files = [f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))]
+        if not downloaded_files:
+            bot.edit_message_text("⚠️ Не удалось найти загруженное видео.", chat_id=message.chat.id, message_id=status_message.message_id)
+            return
+
+        video_path = os.path.join(download_dir, downloaded_files[0])
+        fixed_video_path, width, height = process_video(video_path)
+
+        # Отправка видео
+        send_video_to_user(
+            bot=bot,
+            chat_id=message.chat.id,
+            user_id=message.from_user.id,
+            username=message.from_user.username,
+            url="https://www.youtube.com/watch?v=QnaS8T4MdrI",
+            video_path=fixed_video_path,
+            width=width,
+            height=height,
+            admin_id=config.ADMIN_ID
+        )
+
+        # Удаление
+        if os.path.exists(fixed_video_path):
+            os.remove(fixed_video_path)
+
+    except Exception as e:
+        bot.send_message(message.chat.id, f"🚫 Ошибка: {e}")
 
 
 @bot.message_handler(commands=['start', 'help'])
