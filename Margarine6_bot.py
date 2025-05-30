@@ -125,10 +125,29 @@ def youtube_blocked_test(message):
                 "https://www.youtube.com/watch?v=QnaS8T4MdrI"
             ]
 
-            # Загрузка видео
-            subprocess.run(ytdlp_command, check=True)
+            # Сообщение пользователю
+            bot.send_message(message.chat.id, "Начинаю загрузку видео через Tor...")
 
-            # Поиск файла
+            # Запуск yt-dlp с выводом построчно
+            process = subprocess.Popen(
+                ytdlp_command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1
+            )
+
+            for line in process.stdout:
+                if line.strip():
+                    bot.send_message(message.chat.id, f"`{line.strip()}`", parse_mode="Markdown")
+
+            process.wait()
+
+            if process.returncode != 0:
+                bot.send_message(message.chat.id, "Загрузка завершилась с ошибкой.")
+                return
+
+            # Поиск загруженного файла
             downloaded_files = [
                 f for f in os.listdir(download_dir) if f.endswith(('.mp4', '.mkv'))
             ]
@@ -141,7 +160,7 @@ def youtube_blocked_test(message):
             # Обработка видео
             fixed_video_path, width, height = process_video(video_path)
 
-            # Отправка через send_video_to_user
+            # Отправка пользователю
             send_video_to_user(
                 bot=bot,
                 chat_id=message.chat.id,
@@ -158,8 +177,6 @@ def youtube_blocked_test(message):
             if os.path.exists(fixed_video_path):
                 os.remove(fixed_video_path)
 
-        except subprocess.CalledProcessError as e:
-            bot.send_message(message.chat.id, f"Ошибка при загрузке видео: {e}")
         except Exception as e:
             bot.send_message(message.chat.id, f"Ошибка: {e}")
     else:
