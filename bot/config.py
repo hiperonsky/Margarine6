@@ -1,13 +1,16 @@
-# config.py
+import os
+from dotenv import load_dotenv
 
-# Telegram Bot API token
-API_TOKEN = '7667567049:AAFz2iBVViSl4i-d3gZMALLFvWMDplVw3PI'
+load_dotenv()
 
-# Telegram Admin ID
-ADMIN_ID = 167815811  # Замените на ваш Telegram ID
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-# Directory for downloads
-DOWNLOAD_DIR = "./downloads"
+# Telegram Admin ID — убедись, что он приводится к int
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
-# Telegram Channel Username
-CHANNEL_USERNAME = "@vovanradio"
+# Папки
+DOWNLOAD_DIR = os.getenv("DOWNLOAD_DIR", "downloads")
+CONVERTED_DIR = os.getenv("CONVERTED_DIR", "converted")
+
+# Канал
+CHANNEL_USERNAME = os.getenv("CHANNEL_USERNAME", "@example_channel")
