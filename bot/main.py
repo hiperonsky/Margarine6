@@ -437,4 +437,9 @@ def handle_download_request(message):
         bot.reply_to(message, str(e))
 
 
-bot.polling()
+def main():
+    # здесь запускается твой бот
+    bot.polling()  # или executor.start_polling(...) — зависит от реализации
+
+if __name__ == "__main__":
+    main()
