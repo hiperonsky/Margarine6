@@ -12,7 +12,7 @@ from bot.video_sender import send_video_to_user  # ← указали путь �
 from yt_dlp.utils import DownloadError
 
 
-bot = telebot.TeleBot(config.API_TOKEN)
+bot = telebot.TeleBot(config.TELEGRAM_BOT_TOKEN)
 
 if not os.path.exists(config.DOWNLOAD_DIR):
     os.makedirs(config.DOWNLOAD_DIR)
