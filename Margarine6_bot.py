@@ -4,9 +4,11 @@ from yt_dlp import YoutubeDL
 import subprocess
 import re
 import time
-import config  # Импортируем модуль с константами, тест
-import downloads_manager  # модуль с функциями для папки downloads
-from video_sender import send_video_to_user
+
+from bot import config  # ← было просто config
+from bot import downloads_manager  # ← было просто downloads_manager
+from bot.video_sender import send_video_to_user  # ← указали путь через bot
+
 from yt_dlp.utils import DownloadError
 
 
