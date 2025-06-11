@@ -361,8 +361,12 @@ def get_format_str(url):
     if 'instagram.com' in url or 'vimeo.com' in url:
         return 'b'
     else:
-        # Выбор формата видео от 480p до 720p (с раздельным или слитым аудио)
-        return '(bestvideo[height<=720][height>=480]+bestaudio)/best[height<=720][height>=480]'
+        return (
+            "bestvideo[height=480]+bestaudio/best[height=480]/"
+            "bestvideo[height=720]+bestaudio/best[height=720]/"
+            "bestvideo[height=360]+bestaudio/best[height=360]/"
+            "best"
+        )
 
 
 def download_with_options(url, use_tor=False):
