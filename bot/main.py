@@ -363,7 +363,7 @@ def get_format_str(url):
     elif 'vimeo.com' in url:
         return 'b'
     else:
-        return '(bv*+ba/b)[height<=480]/(bv*+ba/b)[height<=720]/b'
+        return 'bestvideo[height<=480]+bestaudio/bestvideo[height<=720]+bestaudio/best'
 
 
 
