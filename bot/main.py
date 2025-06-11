@@ -363,7 +363,7 @@ def get_format_str(url):
     elif 'vimeo.com' in url:
         return 'b'
     else:
-        return 'bestvideo[height<=480]+bestaudio/bestvideo[height<=720]+bestaudio/best'
+        return 'best[height<=480]/best[height<=720]/best'
 
 
 
@@ -373,6 +373,7 @@ def download_with_options(url, use_tor=False):
         'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s',
         'quiet': True,
         'no_warnings': True,
+        'merge_output_format': 'mp4',  # 🔧 объединение потоков
     }
 
     if use_tor:
