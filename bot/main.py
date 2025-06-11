@@ -358,12 +358,10 @@ def clean_downloads(message):
 
 
 def get_format_str(url):
-    if 'instagram.com' in url:
-        return 'b'
-    elif 'vimeo.com' in url:
+    if 'instagram.com' in url or 'vimeo.com' in url:
         return 'b'
     else:
-        return 'best[height<=480]/best[height<=720]/best'
+        return 'bestvideo+bestaudio/best'
 
 
 
@@ -373,7 +371,11 @@ def download_with_options(url, use_tor=False):
         'outtmpl': f'{config.DOWNLOAD_DIR}/%(title)s.%(ext)s',
         'quiet': True,
         'no_warnings': True,
-        'merge_output_format': 'mp4',  # 🔧 объединение потоков
+        'merge_output_format': 'mp4',
+        'force_keyframes_at_cuts': True,
+        'overwrites': True,
+        'noplaylist': True,
+        'no_sabr': True,
     }
 
     if use_tor:
