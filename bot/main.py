@@ -362,7 +362,11 @@ def clean_downloads(message):
 def get_format_str(url):
     if 'instagram.com' in url or 'vimeo.com' in url:
         return 'b'
+    elif 'youtube.com/shorts/' in url:
+        # Shorts: скачиваем одним потоком
+        return 'best'
     else:
+        # Обычные YouTube видео: сначала 480p, затем 720p, затем 360p, затем fallback
         return (
             "bestvideo[height=480]+bestaudio/best[height=480]/"
             "bestvideo[height=720]+bestaudio/best[height=720]/"
