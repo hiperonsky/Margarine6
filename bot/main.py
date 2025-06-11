@@ -65,17 +65,20 @@ def process_video(video_path):
             os.path.splitext(video_path)[0] + "_fixed.mp4"
         )
 
-        # Пересохранение видео с использованием FFmpeg
-        # (для исправления метаданных)
+        # Перекодируем в совместимый формат: H.264 + AAC
         ffmpeg_command = [
             "ffmpeg", "-i", video_path,
-            "-movflags", "faststart",  # Исправление метаданных
-            "-c", "copy",
+            "-c:v", "libx264",             # Видео кодек
+            "-preset", "fast",             # Скорость кодирования
+            "-crf", "23",                  # Качество (меньше = лучше)
+            "-c:a", "aac",                 # Аудио кодек
+            "-b:a", "128k",                # Битрейт аудио
+            "-movflags", "faststart",      # Для Telegram и веб
             fixed_video_path
         ]
         subprocess.run(ffmpeg_command, check=True)
 
-        # Получение размеров видео с помощью FFmpeg
+        # Получение размеров видео
         ffmpeg_command = [
             "ffmpeg", "-i", fixed_video_path
         ]
@@ -86,7 +89,6 @@ def process_video(video_path):
         )
         ffmpeg_output = result.stderr
 
-        # Используем регулярное выражение для извлечения ширины и высоты видео
         resolution_match = re.search(r'Video:.* (\d+)x(\d+)', ffmpeg_output)
         if resolution_match:
             width = int(resolution_match.group(1))
@@ -94,7 +96,7 @@ def process_video(video_path):
         else:
             raise ValueError("Не удалось извлечь размеры видео.")
 
-        # Удаление оригинального видео (только если файл существует)
+        # Удаление оригинала
         if os.path.exists(video_path):
             os.remove(video_path)
             print(f"Оригинальное видео {video_path} удалено.")
