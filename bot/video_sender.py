@@ -67,6 +67,7 @@ def send_video_to_user(
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
+                "-fs", "50M",               # <-- тут добавлено ограничение по размеру
                 "-c", "copy",
                 "-map", "0",
                 "-f", "segment",
