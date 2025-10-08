@@ -3,7 +3,7 @@ import subprocess
 import json
 
 
-def get_segment_time(path, max_size_mb=50):
+def get_segment_time(path, max_size_mb=50, reserve=0.95):
     """
     Вычисляет длительность сегмента (в секундах), чтобы каждый файл
     был не больше max_size_mb.
@@ -18,14 +18,13 @@ def get_segment_time(path, max_size_mb=50):
     info = json.loads(result.stdout)["format"]
     duration = float(info["duration"])       # в секундах
     size_bytes = float(info["size"])         # в байтах
-    # средний битрейт (бит/с)
-    bitrate = size_bytes * 8 / duration
-    # максимальный размер в битах
-    max_bits = max_size_mb * 1024**2 * 8
-    # время сегмента = max_bits / bitrate
-    segment_time = max_bits / bitrate
-    # ограничим сверху 600 с (10 минут), но обычно выйдет меньше
-    return min(int(segment_time), 600)
+    # максимальный размер с запасом (байт)
+    max_bytes = max_size_mb * 1024**2 * reserve
+    # "сырая" длительность сегмента
+    raw_time = (max_bytes / size_bytes) * duration
+    # гарантируем минимум 10 с и максимум 600 с
+    seg = int(raw_time)
+    return max(10, min(seg, 600))
 
 def send_video_to_user(
     bot, chat_id, user_id, username, url, video_path, width, height, admin_id
@@ -67,7 +66,6 @@ def send_video_to_user(
             ffmpeg_command = [
                 "ffmpeg",
                 "-i", video_path,
-                "-fs", "50M",               # <-- тут добавлено ограничение по размеру
                 "-c", "copy",
                 "-map", "0",
                 "-f", "segment",
