@@ -17,7 +17,7 @@ bot = telebot.TeleBot(config.TELEGRAM_BOT_TOKEN)
 if not os.path.exists(config.DOWNLOAD_DIR):
     os.makedirs(config.DOWNLOAD_DIR)
 
-
+# test comment 08/10/2025
 def sanitize_filename(filename):
     """
     Удаляет из имени файла символы, которые могут вызывать конфликты.
