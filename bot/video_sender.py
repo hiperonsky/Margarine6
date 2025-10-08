@@ -1,6 +1,31 @@
 import os
 import subprocess
+import json
 
+
+def get_segment_time(path, max_size_mb=50):
+    """
+    Вычисляет длительность сегмента (в секундах), чтобы каждый файл
+    был не больше max_size_mb.
+    """
+    # Получаем информацию о файле через ffprobe
+    cmd = [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration,size",
+        "-of", "json", path
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+    info = json.loads(result.stdout)["format"]
+    duration = float(info["duration"])       # в секундах
+    size_bytes = float(info["size"])         # в байтах
+    # средний битрейт (бит/с)
+    bitrate = size_bytes * 8 / duration
+    # максимальный размер в битах
+    max_bits = max_size_mb * 1024**2 * 8
+    # время сегмента = max_bits / bitrate
+    segment_time = max_bits / bitrate
+    # ограничим сверху 600 с (10 минут), но обычно выйдет меньше
+    return min(int(segment_time), 600)
 
 def send_video_to_user(
     bot, chat_id, user_id, username, url, video_path, width, height, admin_id
@@ -24,7 +49,20 @@ def send_video_to_user(
             base_filename, ext = os.path.splitext(original_filename)
             part_filenames = []
 
-            # Команда FFmpeg для деления файла
+#            # Команда FFmpeg для деления файла
+#            output_template = os.path.join(parts_dir, f"{base_filename}_part%02d{ext}")
+#            ffmpeg_command = [
+#                "ffmpeg",
+#                "-i", video_path,
+#                "-c", "copy",
+#                "-map", "0",
+#                "-f", "segment",
+#                "-segment_time", "600",  # Делим на части по 10 минут
+#                "-reset_timestamps", "1",  # Сбрасываем тайм-коды
+#                output_template
+#            ]
+            # Вычисляем оптимальную длительность сегмента
+            seg_time = get_segment_time(video_path, max_size_mb=50)
             output_template = os.path.join(parts_dir, f"{base_filename}_part%02d{ext}")
             ffmpeg_command = [
                 "ffmpeg",
@@ -32,8 +70,8 @@ def send_video_to_user(
                 "-c", "copy",
                 "-map", "0",
                 "-f", "segment",
-                "-segment_time", "600",  # Делим на части по 10 минут
-                "-reset_timestamps", "1",  # Сбрасываем тайм-коды
+                "-segment_time", str(seg_time),
+                "-reset_timestamps", "1",
                 output_template
             ]
             subprocess.run(ffmpeg_command, check=True)
