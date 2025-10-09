@@ -411,6 +411,92 @@ def download_video_file(url):
             return download_with_options(url, use_tor=True)
         except Exception as e2:
             raise RuntimeError(f"[BOT] Ошибка даже через Tor: {e2}")
+        
+
+def download_with_progress(url, chat_id, message_id, use_tor=False):
+    """
+    Загружает видео с отображением прогресса в чате.
+    """
+    # Подготовка команды yt-dlp
+    output_template = os.path.join(config.DOWNLOAD_DIR, '%(title)s.%(ext)s')
+    
+    ytdlp_command = [
+        "yt-dlp",
+        "-f", get_format_str(url),
+        "-o", output_template,
+        "--merge-output-format", "mp4",
+        "--force-keyframes-at-cuts",
+        "--restrict-filenames",
+        "--no-playlist",
+        "--retries", "5",
+        "--fragment-retries", "5",
+        "--continue-dl",
+        url
+    ]
+    
+    if use_tor:
+        ytdlp_command.extend([
+            "--proxy", "socks5://127.0.0.1:9050",
+            "--cookies", "web_auth_storage.txt"
+        ])
+    
+    # Запуск процесса с прогресс-баром
+    process = subprocess.Popen(
+        ytdlp_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
+    )
+    
+    last_edit_time = 0
+    for line in process.stdout:
+        if not line.strip():
+            continue
+        
+        # Поиск прогресса
+        progress_match = re.search(r'(\d{1,3}\.\d+)%', line)
+        if progress_match:
+            percent = float(progress_match.group(1))
+            blocks = int(percent / 10)
+            bar = "▓" * blocks + "░" * (10 - blocks)
+            now = time.time()
+            if now - last_edit_time > 1:  # обновлять не чаще раза в секунду
+                try:
+                    bot.edit_message_text(
+                        f"📥 Прогресс: `{bar} {percent:.1f}%`",
+                        chat_id=chat_id,
+                        message_id=message_id,
+                        parse_mode="Markdown"
+                    )
+                    last_edit_time = now
+                except Exception as e:
+                    print(f"Ошибка обновления прогресса: {e}")
+    
+    process.wait()
+    
+    if process.returncode != 0:
+        raise RuntimeError("Ошибка при загрузке видео")
+    
+    # Поиск загруженного файла
+    downloaded_files = [f for f in os.listdir(config.DOWNLOAD_DIR) 
+                       if f.endswith(('.mp4', '.mkv'))]
+    if not downloaded_files:
+        raise RuntimeError("Не удалось найти загруженное видео")
+    
+    video_path = os.path.join(config.DOWNLOAD_DIR, downloaded_files[0])
+    return process_video(video_path)
+
+
+def download_video_file_with_progress(url, chat_id, message_id):
+    try:
+        return download_with_progress(url, chat_id, message_id)
+    except Exception as e:
+        print(f"[BOT] Ошибка при первой попытке скачивания: {e}")
+        try:
+            return download_with_progress(url, chat_id, message_id, use_tor=True)
+        except Exception as e2:
+            raise RuntimeError(f"[BOT] Ошибка даже через Tor: {e2}")
 
 
 @bot.message_handler(content_types=['text'])
@@ -431,11 +517,24 @@ def handle_download_request(message):
         message.text
     )
     url = message.text
-    bot.reply_to(message, "Начинаю загрузку видео...")
+    
+    # Отправляем начальное сообщение и сохраняем его ID
+    status_message = bot.reply_to(message, "🔄 Начинаю загрузку видео...")
 
     try:
-        # Скачивание видео
-        video_path, width, height = download_video_file(url)
+        # Скачивание видео с прогресс-баром
+        video_path, width, height = download_video_file_with_progress(
+            url, 
+            message.chat.id, 
+            status_message.message_id
+        )
+
+        # Обновляем сообщение после завершения загрузки
+        bot.edit_message_text(
+            "✅ Загрузка завершена! Обрабатываю видео...",
+            chat_id=message.chat.id,
+            message_id=status_message.message_id
+        )
 
         # Отправка видео
         send_video_to_user(
@@ -447,11 +546,16 @@ def handle_download_request(message):
             video_path,
             width,
             height,
-            config.ADMIN_ID  # Передаем ID администратора
+            config.ADMIN_ID
         )
 
     except RuntimeError as e:
-        bot.reply_to(message, str(e))
+        bot.edit_message_text(
+            f"❌ {str(e)}", 
+            chat_id=message.chat.id,
+            message_id=status_message.message_id
+        )
+
 
 
 def main():
