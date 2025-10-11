@@ -4,6 +4,8 @@ from yt_dlp import YoutubeDL
 import subprocess
 import re
 import time
+import uuid
+
 
 from bot import config  # ← было просто config
 from bot import downloads_manager  # ← было просто downloads_manager
@@ -17,21 +19,33 @@ bot = telebot.TeleBot(config.TELEGRAM_BOT_TOKEN)
 if not os.path.exists(config.DOWNLOAD_DIR):
     os.makedirs(config.DOWNLOAD_DIR)
 
-# test comment 08/10/2025
 def sanitize_filename(filename):
     """
     Удаляет из имени файла символы, которые могут вызывать конфликты.
+    Если после очистки ничего не осталось, генерирует уникальное имя.
     """
-    return re.sub(r'[:"*?<>|/\\]', '', filename).strip()
+    # Удаляем недопустимые символы
+    cleaned = re.sub(r'[:"*?<>|/\\]', '', filename).strip()
+    
+    if cleaned:
+        # Добавляем timestamp для гарантии уникальности
+        timestamp = str(int(time.time() * 1000))  # миллисекунды
+        return f"{cleaned}_{timestamp}"
+    
+    # Если всё вырезалось — генерируем уникальное имя
+    unique_id = uuid.uuid4().hex[:8]  # короткий UUID
+    timestamp = str(int(time.time() * 1000))
+    return f"video_{unique_id}_{timestamp}"
 
 
 def sanitize_filepath(filepath):
     """
-    Применяет sanitize_filename ко всей части пути.
+    Применяет sanitize_filename только к имени файла, сохраняя директорию и расширение.
     """
     directory, filename = os.path.split(filepath)
-    sanitized_filename = sanitize_filename(filename)
-    return os.path.join(directory, sanitized_filename)
+    stem, ext = os.path.splitext(filename)
+    safe_stem = sanitize_filename(stem)
+    return os.path.join(directory, f"{safe_stem}{ext}")
 
 
 def notify_admin(user_id, username, message_text):
